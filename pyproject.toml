@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jobo-scraper"
-version = "0.1.3"
+version = "0.1.4"
 description = "Jobo web scraper for get the current available events."
 authors = ["Luis Gómez Alonso <luis.gomez.alonso95@gmail.com>"]
 
