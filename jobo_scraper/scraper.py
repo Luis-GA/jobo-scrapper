@@ -1,6 +1,13 @@
 from requests import Session
 from bs4 import BeautifulSoup as bs
 
+import logging
+
+from .logging_messages import LOGIN_ERROR, SCRAPING_ERROR
+
+LOGGER = logging.getLogger(__name__)
+
+
 class JoboScraping:
     user = None
     password = None
@@ -11,19 +18,11 @@ class JoboScraping:
     login_url = f'{base_url}account/login'
     event_link = f"{base_url}secured/selection/event/date?productId="
 
-    def __init__(self, user, password):
+    def __init__(self, user: str, password: str):
         self.user = user
         self.password = password
 
-    def _clean_date(self, string):
-        """Clean the string rubbish from the scraping process."""
-        string = string.replace('\\r', '').replace('range', '').replace('from', '').replace('to', '').replace('\\t', '')
-        string = string.replace('\\n', '').replace('<', '').replace('>', '').replace('span', '').replace('unique', '')
-        string = string.replace('class', '').replace('date', '').replace('=', '').replace('"', '')
-        string = string.replace('day', '').replace('/', '').replace('time', '').replace('separator', '')
-        return self._decode_strings(string.replace('separar', ' '))
-
-    def _session_login(self):
+    def _session_login(self, retries: int = 3):
         """Start a session in Jobo."""
 
         try:
@@ -34,10 +33,16 @@ class JoboScraping:
 
             login_data = {'login': self.user, 'password': self.password, '_csrf': self.token}
             self.session.post('https://madridcultura-jobo.shop.secutix.com/account/login', login_data)
-        except Exception as e:
-            print(e)
+
+        except Exception as exc:
             self.token = None
-            self._session_login()
+
+            LOGGER.warning(LOGIN_ERROR.format(exc, retries))
+            if retries > 0:
+                self._session_login(retries - 1)
+            else:
+                LOGGER.error(LOGIN_ERROR.format(exc, retries))
+                raise exc
 
     def _event_data_downloader(self):
         """Scrap the events webpage and list their attributes."""
@@ -56,18 +61,19 @@ class JoboScraping:
                         'title': str(jobo_event.find(attrs={'class': 'title'}).next),
                         'image': "https://i.ibb.co/N6Hy2TT/La-P-gina-de-Jobo-es-una-mierda.png",
                         'place': str(jobo_event.find(attrs={'class': 'site'}).next),
-                        'link':  self.event_link + id,
+                        'link': self.event_link + id,
                         'days': str(jobo_event.find(attrs={'class': 'day'}).string),
                         'description': str(jobo_event.find(attrs={'class': 'description'}).contents[1].string)
                     }
                     result_events[event['title']] = event
-            except Exception:
+            except Exception as exc:
+                LOGGER.error(SCRAPING_ERROR.format(exc))
                 result_events['scraping_error'] = True
 
         return result_events
 
     def get_list_of_events(self):
-
+        """List all the available events."""
         # New Session builder
         self._session_login()
         # Scrap events
