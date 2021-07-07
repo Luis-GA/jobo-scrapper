@@ -30,3 +30,4 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: true
         verbose: true
+        gcov_path_exclude: setup.py
