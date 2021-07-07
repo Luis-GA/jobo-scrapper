@@ -13,9 +13,9 @@ class JoboScraping:
     password = None
     token = None
     session = Session()
-    base_url = 'https://madridcultura-jobo.shop.secutix.com/'
-    events_url = f'{base_url}secured/list/events'
-    login_url = f'{base_url}account/login'
+    base_url = "https://madridcultura-jobo.shop.secutix.com/"
+    events_url = f"{base_url}secured/list/events"
+    login_url = f"{base_url}account/login"
     event_link = f"{base_url}secured/selection/event/date?productId="
 
     def __init__(self, user: str, password: str):
@@ -28,11 +28,17 @@ class JoboScraping:
         try:
             if not self.token:
                 site = self.session.get(self.login_url)
-                bs_content = bs(site.content, 'html.parser')
-                self.token = bs_content.find('input', {'name': '_csrf'})['value']
+                bs_content = bs(site.content, "html.parser")
+                self.token = bs_content.find("input", {"name": "_csrf"})["value"]
 
-            login_data = {'login': self.user, 'password': self.password, '_csrf': self.token}
-            self.session.post('https://madridcultura-jobo.shop.secutix.com/account/login', login_data)
+            login_data = {
+                "login": self.user,
+                "password": self.password,
+                "_csrf": self.token,
+            }
+            self.session.post(
+                "https://madridcultura-jobo.shop.secutix.com/account/login", login_data
+            )
 
         except Exception as exc:
             self.token = None
@@ -49,26 +55,36 @@ class JoboScraping:
 
         result_events = {}
 
-        jobo_events_home_page = bs(str(self.session.get(self.events_url).content), 'html.parser')
-        jobo_events = jobo_events_home_page.find_all(attrs={'class': "content product-with-logo"})
+        jobo_events_home_page = bs(
+            str(self.session.get(self.events_url).content), "html.parser"
+        )
+        jobo_events = jobo_events_home_page.find_all(
+            attrs={"class": "content product-with-logo"}
+        )
 
         for jobo_event in jobo_events:
             try:
-                available_link = jobo_event.find_all(attrs={'class': "button action_buttons_0"})
+                available_link = jobo_event.find_all(
+                    attrs={"class": "button action_buttons_0"}
+                )
                 if available_link:
-                    id = available_link[0].next_element.attrs['date?productid'][:-1]
+                    id = available_link[0].next_element.attrs["date?productid"][:-1]
                     event = {
-                        'title': str(jobo_event.find(attrs={'class': 'title'}).next),
-                        'image': "https://i.ibb.co/N6Hy2TT/La-P-gina-de-Jobo-es-una-mierda.png",
-                        'place': str(jobo_event.find(attrs={'class': 'site'}).next),
-                        'link': self.event_link + id,
-                        'days': str(jobo_event.find(attrs={'class': 'day'}).string),
-                        'description': str(jobo_event.find(attrs={'class': 'description'}).contents[1].string)
+                        "title": str(jobo_event.find(attrs={"class": "title"}).next),
+                        "image": "https://i.ibb.co/N6Hy2TT/La-P-gina-de-Jobo-es-una-mierda.png",
+                        "place": str(jobo_event.find(attrs={"class": "site"}).next),
+                        "link": self.event_link + id,
+                        "days": str(jobo_event.find(attrs={"class": "day"}).string),
+                        "description": str(
+                            jobo_event.find(attrs={"class": "description"})
+                            .contents[1]
+                            .string
+                        ),
                     }
-                    result_events[event['title']] = event
+                    result_events[event["title"]] = event
             except Exception as exc:
                 LOGGER.error(SCRAPING_ERROR.format(exc))
-                result_events['scraping_error'] = True
+                result_events["scraping_error"] = True
 
         return result_events
 
