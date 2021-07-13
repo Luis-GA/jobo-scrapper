@@ -18,5 +18,5 @@ from jobo_scraper import JoboScraping
 
 jobo = JoboScraping ("<user>", "<password>")
 
-print(jobo.get_list_of_events())
+print(jobo.available_events())
 ```

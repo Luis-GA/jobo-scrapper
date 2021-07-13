@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup as bs
 
 import logging
 
-from .logging_messages import LOGIN_ERROR, SCRAPING_ERROR
+from .logging_messages import LOGIN_ERROR, SCRAPING_ERROR, SCRAPING_IMAGE_ERROR
 
 LOGGER = logging.getLogger(__name__)
 
@@ -50,6 +50,17 @@ class JoboScraping:
                 LOGGER.error(LOGIN_ERROR.format(exc, retries))
                 raise exc
 
+    def _image_scraper(self, image):
+        """Scrap image URL."""
+        try:
+            for key, value in image.contents[1].attrs.items():
+                if key.endswith("data-img-large"):
+                    return value
+        except Exception:
+            LOGGER.error(SCRAPING_IMAGE_ERROR)
+        # Default image
+        return "https://i.ibb.co/N6Hy2TT/La-P-gina-de-Jobo-es-una-mierda.png"
+
     def _event_data_downloader(self):
         """Scrap the events webpage and list their attributes."""
 
@@ -61,7 +72,10 @@ class JoboScraping:
         jobo_events = jobo_events_home_page.find_all(
             attrs={"class": "content product-with-logo"}
         )
-
+        images = jobo_events_home_page.find_all(
+            attrs={"class": "product_image_container product-image-scale-1"}
+        )
+        event_count = 0
         for jobo_event in jobo_events:
             try:
                 available_link = jobo_event.find_all(
@@ -71,7 +85,7 @@ class JoboScraping:
                     id = available_link[0].next_element.attrs["date?productid"][:-1]
                     event = {
                         "title": str(jobo_event.find(attrs={"class": "title"}).next),
-                        "image": "https://i.ibb.co/N6Hy2TT/La-P-gina-de-Jobo-es-una-mierda.png",
+                        "image": self._image_scraper(images[event_count]),
                         "place": str(jobo_event.find(attrs={"class": "site"}).next),
                         "link": self.event_link + id,
                         "days": str(jobo_event.find(attrs={"class": "day"}).string),
@@ -85,10 +99,11 @@ class JoboScraping:
             except Exception as exc:
                 LOGGER.error(SCRAPING_ERROR.format(exc))
                 result_events["scraping_error"] = True
+            event_count += 1
 
         return result_events
 
-    def get_list_of_events(self):
+    def available_events(self) -> dict:
         """List all the available events."""
         # New Session builder
         self._session_login()

@@ -1,6 +1,8 @@
+"""Scraping Tests."""
+
+import pytest
 from unittest.mock import patch, MagicMock
 from requests import Session
-import pytest
 from jobo_scraper import JoboScraping
 from tests import (
     JOBO_WEBPAGE_WITHOUT_EVENTS,
@@ -21,7 +23,7 @@ def test_return_available_event(mock_session_get, mock_session_post):
     mock_session_get.side_effect = [login, events]
 
     jobo = JoboScraping("test@test.com", "testpassword")
-    result = jobo.get_list_of_events()
+    result = jobo.available_events()
 
     assert result
     event = list(result.values())[0]
@@ -49,7 +51,7 @@ def test_return_empty_list_of_events(mock_session_get, mock_session_post):
     mock_session_get.side_effect = [login, events]
 
     jobo = JoboScraping("test@test.com", "testpassword")
-    result = jobo.get_list_of_events()
+    result = jobo.available_events()
 
     assert result == {}
     assert mock_session_get.called
@@ -66,7 +68,7 @@ def test_fail_login(mock_session_get):
 
     jobo = JoboScraping("test@test.com", "testpassword")
     with pytest.raises(TypeError):
-        jobo.get_list_of_events()
+        jobo.available_events()
 
     assert mock_session_get.called
     assert mock_session_get.call_count == 4
@@ -83,7 +85,7 @@ def test_bad_events_webpage(mock_session_get, mock_session_post):
     mock_session_get.side_effect = [login, events]
 
     jobo = JoboScraping("test@test.com", "testpassword")
-    result = jobo.get_list_of_events()
+    result = jobo.available_events()
 
     assert result
     assert result.get("scraping_error")
