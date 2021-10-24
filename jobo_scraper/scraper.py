@@ -50,7 +50,7 @@ class JoboScraping:
                 LOGGER.error(LOGIN_ERROR.format(exc, retries))
                 raise exc
 
-    def _image_scraper(self, image:str):
+    def _image_scraper(self, image: str):
         """Scrap image URL."""
         try:
             for key, value in image.contents[1].attrs.items():
@@ -82,7 +82,7 @@ class JoboScraping:
                     attrs={"class": "button action_buttons_0"}
                 )
                 if available_link:
-                    id = jobo_event.find(href=True).attrs['href'].split("=")[-1]
+                    id = jobo_event.find(href=True).attrs["href"].split("=")[-1]
                     event = {
                         "title": str(jobo_event.find(attrs={"class": "title"}).next),
                         "image": self._image_scraper(images[event_count]),
